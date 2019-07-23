@@ -1,0 +1,4 @@
+config.json
+uploads/
+node_modules/
+.idea/
