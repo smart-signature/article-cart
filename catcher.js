@@ -91,6 +91,30 @@ async function parseChainnews(artid) {
     console.log(`Article ${artid} from Chainnews.com process ended...`);
 }
 
+async function parseWechat(id) {
+    console.log(`SS-Spider: Loading... trying to catch article ${id} from WeChat`);
+    // const biz = '';
+    // const mid = '';
+    // const idx = '';
+    // const sn = '1';
+    // const url = `http://mp.weixin.qq.com/mp/rumor?action=info&__biz=${biz}&mid=${mid}&idx=${idx}&sn=${sn}#wechat_redirect`;
+    // console.log(url);
+    const rawPage = await axios({
+        url: `https://mp.weixin.qq.com/s/${id}`,
+        method: 'get',
+        headers: {
+            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 10_0_1 like Mac OS X) AppleWebKit/602.1.50 (KHTML, like Gecko) Mobile/14A403 MicroMessenger/6.5.18 NetType/WIFI Language/zh_CN',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+        }
+    });
+    const parsedPage = htmlparser.parse(rawPage.data);
+    const parsedContent = parsedPage.querySelector('div.rich_media_content').childNodes[1];
+    const turndownService = new turndown();
+    let articleContent = turndownService.turndown(parsedContent.toString());
+    articleContent = articleContent.replace(/\n{2,}/g, '\n');
+    console.log(articleContent);
+}
+
 async function uploadArticleBody(articleObj) {
     let draftUpload = null;
     try {
@@ -149,5 +173,6 @@ async function uploadArticleCover(url) {
     return imageUpload.data.data.cover;
 }
 
-parseOrange();
-parseChainnews();
+// parseOrange();
+// parseChainnews();
+parseWechat('');
