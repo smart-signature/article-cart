@@ -11,9 +11,12 @@
   "dependencies": {
     "axios": "^0.19.0",
     "form-data": "^2.5.0",
+    "html-format": "^1.0.1",
+    "html-formatter": "^0.1.9",
     "htmlparser2": "^3.10.1",
     "image-downloader": "^3.4.2",
     "node-html-parser": "^1.1.16",
+    "pretty": "^2.0.0",
     "turndown": "^5.0.3"
   }
 }

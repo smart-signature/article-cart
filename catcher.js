@@ -9,6 +9,8 @@ const downloader = require('image-downloader');
 const fs = require('fs');
 const FormData = require('form-data');
 const config = require('./config.json');
+// const formatter = require('html-format');
+const pretty = require('pretty');
 
 const xtoken = config.xtoken;
 
@@ -108,11 +110,61 @@ async function parseWechat(id) {
         }
     });
     const parsedPage = htmlparser.parse(rawPage.data);
-    const parsedContent = parsedPage.querySelector('div.rich_media_content').childNodes[1];
-    const turndownService = new turndown();
-    let articleContent = turndownService.turndown(parsedContent.toString());
-    articleContent = articleContent.replace(/\n{2,}/g, '\n');
-    console.log(articleContent);
+    // 似乎没办法在一个后面再接一个查？？（查一次， 赋值之后再给另一个查）
+    // imgElement是个引用（reference）
+    let imgRawUrl, imgUpUrl, imgFileName;
+    const imgElement = parsedPage.querySelector('div.rich_media_content').querySelectorAll('img');
+    for (let index = 0; index < imgElement.length; index += 1) {
+        imgRawUrl = imgElement[index].rawAttributes["data-src"];
+        imgFileName = './uploads/today_' + Date.now() + '.' + imgElement[0].rawAttributes["data-type"];
+        imgUpUrl = await uploadArticleCover(imgRawUrl, imgFileName);
+        // 改rawAttributes似乎是无效的
+        // imgElement[index].rawAttributes["data-src"] = config.imageServiceUrl + imgUpUrl;
+        // 需要手动赋值..
+        imgElement[index].rawAttrs = imgElement[index].rawAttrs.replace(imgRawUrl, config.imageServiceUrl + imgUpUrl);
+        imgElement[index].rawAttrs = imgElement[index].rawAttrs.replace('data-src', 'src');
+    }
+    // const parsedContent = parsedPage.querySelector('div.rich_media_content').querySelector('section').toString();
+    // const parsedContent = parsedPage.querySelector('div.rich_media_content').childNodes.toString();
+    let parsedContent = '';
+    // 直接to string会有奇怪的逗号
+    const parsedContentNodes = parsedPage.querySelector('div.rich_media_content').childNodes;
+    for (let index = 0; index < parsedContentNodes.length; index += 1) {
+        parsedContent += parsedContentNodes[index].toString();
+    }
+    // 将HTML改好看一点
+    parsedContent = pretty(parsedContent);
+    // parsedContent = parsedContent.replace(/\s{5,}/, '');
+
+    const parsedTitleRaw = parsedPage.querySelector('h2.rich_media_title').childNodes[0].rawText;
+    const parsedTitle = parsedTitleRaw.replace(/\s+/, '');
+
+    // 提出来之后， script的text不见了？
+    // const coverBlock = parsedPage.querySelectorAll('script').childNodes[27].firstChild.data;
+    const parsedCoverRaw = rawPage.data.match(/msg_cdn_url = "http:\/\/mmbiz\.qpic\.cn\/mmbiz_jpg\/[0-9a-zA-Z]{10,100}\/0\?wx_fmt=jpeg"/)[0];
+    const parsedCover = parsedCoverRaw.substring(15, parsedCoverRaw.length-1);
+    // 先不转MARKDOWN吧
+    // const turndownService = new turndown();
+    // let articleContent = turndownService.turndown(parsedContent.toString());
+    // articleContent = articleContent.replace(/\n{2,}/g, '\n');
+    console.log(parsedTitle);
+    console.log(parsedCover);
+    console.log(parsedContent);
+
+    const coverLocation = await uploadArticleCover(parsedCover);
+
+    const articleObj = {
+        title: parsedTitle,
+        content: parsedContent,
+        cover: coverLocation
+    };
+
+    const uploadResult = await uploadArticleBody(articleObj);
+    if (!uploadResult) {
+        return null;
+    }
+
+    console.log(`Article ${id} from WeChat process ended...`);
 }
 
 async function uploadArticleBody(articleObj) {
@@ -141,13 +193,18 @@ async function uploadArticleBody(articleObj) {
     return draftUpload;
 }
 
-async function uploadArticleCover(url) {
+// 头图需要作为文章数据结构的一部分
+async function uploadArticleCover(url, cacheFile = './uploads/today.jpg') {
     let imageFile;
     let imageUpload = null;
     try {
         imageFile = await downloader.image({
             url,
-            dest: './uploads',
+            dest: cacheFile,
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 10_0_1 like Mac OS X) AppleWebKit/602.1.50 (KHTML, like Gecko) Mobile/14A403 MicroMessenger/6.5.18 NetType/WIFI Language/zh_CN',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+            },
         })
     } catch (e) {
         console.log(e);
@@ -176,3 +233,4 @@ async function uploadArticleCover(url) {
 // parseOrange();
 // parseChainnews();
 parseWechat('');
+// uploadArticleCover('');
