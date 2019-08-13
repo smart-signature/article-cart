@@ -118,11 +118,22 @@ async function parseWechat(id) {
         imgRawUrl = imgElement[index].rawAttributes["data-src"];
         imgFileName = './uploads/today_' + Date.now() + '.' + imgElement[0].rawAttributes["data-type"];
         imgUpUrl = await uploadArticleCover(imgRawUrl, imgFileName);
-        // 改rawAttributes似乎是无效的
+        // 改rawAttributes似乎是无效的， 实际被填充的是rawAttrs
         // imgElement[index].rawAttributes["data-src"] = config.imageServiceUrl + imgUpUrl;
         // 需要手动赋值..
-        imgElement[index].rawAttrs = imgElement[index].rawAttrs.replace(imgRawUrl, config.imageServiceUrl + imgUpUrl);
+        // ...
+        if (imgUpUrl) {
+            // imgElement[index].rawAttrs = imgElement[index].rawAttrs.replace(imgRawUrl, config.imageServiceUrl + imgUpUrl);
+            imgElement[index].rawAttrs = imgElement[index].rawAttrs.replace(
+                /http[s]?:\/\/mmbiz\.q[a-z]{2,4}\.cn\/mmbiz_[a-z]{1,4}\/[a-zA-Z0-9]{50,100}\/[0-9]{1,4}\??[a-z0-9_=&]{0,100}/g, config.imageServiceUrl + imgUpUrl);
+        } else {
+            // imgElement[index].rawAttrs = imgElement[index].rawAttrs.replace(imgRawUrl, 'https://ssimg.frontenduse.top/image/2019/08/08/15c08f8da1bc241d6cc5586e93f2c797.png');
+            imgElement[index].rawAttrs = imgElement[index].rawAttrs.replace(
+                /http[s]?:\/\/mmbiz\.q[a-z]{2,4}\.cn\/mmbiz_[a-z]{1,4}\/[a-zA-Z0-9]{50,100}\/[0-9]{1,4}\??[a-z0-9_=&]{0,100}/g, config.defaultPic);
+        }
+        // 会不会搞出两个src？
         imgElement[index].rawAttrs = imgElement[index].rawAttrs.replace('data-src', 'src');
+        console.log(imgElement[index].rawAttrs);
     }
     // const parsedContent = parsedPage.querySelector('div.rich_media_content').querySelector('section').toString();
     // const parsedContent = parsedPage.querySelector('div.rich_media_content').childNodes.toString();
@@ -137,7 +148,7 @@ async function parseWechat(id) {
     // parsedContent = parsedContent.replace(/\s{5,}/, '');
 
     const parsedTitleRaw = parsedPage.querySelector('h2.rich_media_title').childNodes[0].rawText;
-    const parsedTitle = parsedTitleRaw.replace(/\s+/, '');
+    let parsedTitle = parsedTitleRaw.replace(/\s+/, '');
 
     // 提出来之后， script的text不见了？
     // const coverBlock = parsedPage.querySelectorAll('script').childNodes[27].firstChild.data;
