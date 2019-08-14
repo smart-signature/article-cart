@@ -126,6 +126,9 @@ async function parseWechat(id) {
             // imgElement[index].rawAttrs = imgElement[index].rawAttrs.replace(imgRawUrl, config.imageServiceUrl + imgUpUrl);
             imgElement[index].rawAttrs = imgElement[index].rawAttrs.replace(
                 /http[s]?:\/\/mmbiz\.q[a-z]{2,4}\.cn\/mmbiz_[a-z]{1,4}\/[a-zA-Z0-9]{50,100}\/[0-9]{1,4}\??[a-z0-9_=&]{0,100}/g, config.imageServiceUrl + imgUpUrl);
+            // 实验性质，调整图片长宽缩放
+            imgElement[index].rawAttrs = imgElement[index].rawAttrs.replace(
+                /style=\"[a-zA-Z0-9-.!:;%,() ]{0,200}\"/g, 'style="vertical-align: middle;width: 90%;height: 90%;"');
         } else {
             // imgElement[index].rawAttrs = imgElement[index].rawAttrs.replace(imgRawUrl, 'https://ssimg.frontenduse.top/image/2019/08/08/15c08f8da1bc241d6cc5586e93f2c797.png');
             imgElement[index].rawAttrs = imgElement[index].rawAttrs.replace(
